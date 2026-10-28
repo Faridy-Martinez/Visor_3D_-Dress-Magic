@@ -1,0 +1,256 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dress and Magic - 3D</title>
+
+    <style>
+        body {
+            margin: 0;
+            background: #24123f;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            color: white;
+        }
+
+        h1 {
+            margin: 15px;
+            color: #ffd5f4;
+            letter-spacing: 5px;
+            text-shadow: 0 0 15px #ff70dc;
+        }
+
+        canvas {
+            display: block;
+            margin: auto;
+            max-width: 100%;
+            height: auto;
+            border: 2px solid #e7a6ff;
+            border-radius: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>DRESS AND MAGIC</h1>
+    <p>Diseña, combina y descubre la magia</p>
+
+    <canvas id="lienzo" width="900" height="600"></canvas>
+
+    <script>
+        const canvas = document.getElementById("lienzo");
+        const context = canvas.getContext("2d");
+        let angulo = 0;
+
+        // Vértices de una gema tridimensional
+        const vertices = [
+            { x: 0, y: -1.8, z: 0 },
+            { x: 1, y: 0, z: 0 },
+            { x: 0, y: 0, z: 1 },
+            { x: -1, y: 0, z: 0 },
+            { x: 0, y: 0, z: -1 },
+            { x: 0, y: 1.8, z: 0 }
+        ];
+
+        // Aristas que unen los vértices
+        const aristas = [
+            [0,1], [0,2], [0,3], [0,4],
+            [1,2], [2,3], [3,4], [4,1],
+            [5,1], [5,2], [5,3], [5,4]
+        ];
+
+        // Caras triangulares de la gema
+        const caras = [
+            [0,1,2], [0,2,3], [0,3,4], [0,4,1],
+            [5,2,1], [5,3,2], [5,4,3], [5,1,4]
+        ];
+
+        function rotarY(p, a) {
+            const cos = Math.cos(a);
+            const sin = Math.sin(a);
+
+            return {
+                x: p.x * cos + p.z * sin,
+                y: p.y,
+                z: -p.x * sin + p.z * cos
+            };
+        }
+
+        function rotarX(p, a) {
+            const cos = Math.cos(a);
+            const sin = Math.sin(a);
+
+            return {
+                x: p.x,
+                y: p.y * cos - p.z * sin,
+                z: p.y * sin + p.z * cos
+            };
+        }
+
+        function proyectar(p) {
+            const distancia = 5;
+            const zoom = 75;
+            const z = p.z + distancia;
+
+            return {
+                x: p.x / z * zoom + 450,
+                y: -p.y / z * zoom + 260
+            };
+        }
+
+        // Fondo mágico
+        function dibujarFondo() {
+            const fondo = context.createLinearGradient(
+                0, 0, 900, 600
+            );
+
+            fondo.addColorStop(0, "#34165b");
+            fondo.addColorStop(0.5, "#813e94");
+            fondo.addColorStop(1, "#251344");
+
+            context.fillStyle = fondo;
+            context.fillRect(0, 0, 900, 600);
+
+            // Estrellas decorativas
+            for (let i = 0; i < 35; i++) {
+                const x = (i * 137 + 40) % 900;
+                const y = (i * 83 + 25) % 600;
+
+                context.fillStyle = "#ffe5ff";
+                context.globalAlpha =
+                    0.4 + 0.6 * Math.abs(Math.sin(angulo + i));
+
+                context.beginPath();
+                context.arc(x, y, 2, 0, Math.PI * 2);
+                context.fill();
+            }
+
+            context.globalAlpha = 1;
+        }
+
+        // Gema 3D giratoria
+        function dibujarGema() {
+            const puntos = [];
+
+            for (let i = 0; i < vertices.length; i++) {
+                let p = rotarY(vertices[i], angulo);
+                p = rotarX(p, angulo * 0.6);
+                puntos.push(proyectar(p));
+            }
+
+            // Dibujar las caras de la gema
+            for (let i = 0; i < caras.length; i++) {
+                const cara = caras[i];
+
+                context.beginPath();
+                context.moveTo(
+                    puntos[cara[0]].x, puntos[cara[0]].y
+                );
+                context.lineTo(
+                    puntos[cara[1]].x, puntos[cara[1]].y
+                );
+                context.lineTo(
+                    puntos[cara[2]].x, puntos[cara[2]].y
+                );
+                context.closePath();
+
+                context.fillStyle =
+                    i % 2 === 0 ? "#ff83e5" : "#b4a0ff";
+
+                context.globalAlpha = 0.8;
+                context.fill();
+
+                context.globalAlpha = 1;
+                context.strokeStyle = "#ffe6ff";
+                context.lineWidth = 2;
+                context.stroke();
+            }
+
+            // Dibujar las aristas
+            context.strokeStyle = "#ffffff";
+            context.lineWidth = 2;
+
+            for (let i = 0; i < aristas.length; i++) {
+                const a = puntos[aristas[i][0]];
+                const b = puntos[aristas[i][1]];
+
+                context.beginPath();
+                context.moveTo(a.x, a.y);
+                context.lineTo(b.x, b.y);
+                context.stroke();
+            }
+        }
+
+        // Botón con apariencia tridimensional
+        function dibujarBoton(x, y, ancho, alto, texto) {
+            context.fillStyle = "#401452";
+            context.fillRect(x + 5, y + 7, ancho, alto);
+
+            const gradiente = context.createLinearGradient(
+                x, y, x, y + alto
+            );
+
+            gradiente.addColorStop(0, "#ffb5ee");
+            gradiente.addColorStop(1, "#d34cb7");
+
+            context.fillStyle = gradiente;
+            context.fillRect(x, y, ancho, alto);
+
+            context.strokeStyle = "#ffe5ff";
+            context.lineWidth = 3;
+            context.strokeRect(x, y, ancho, alto);
+
+            context.fillStyle = "#4b1757";
+            context.font = "bold 25px Arial";
+            context.textAlign = "center";
+            context.textBaseline = "middle";
+
+            context.fillText(
+                texto, x + ancho / 2, y + alto / 2
+            );
+        }
+
+        function dibujar() {
+            context.clearRect(0, 0, canvas.width, canvas.height);
+
+            dibujarFondo();
+
+            // Título dentro de la interfaz
+            context.textAlign = "center";
+            context.fillStyle = "#ffffff";
+            context.font = "bold 38px Arial";
+            context.shadowColor = "#ff68e7";
+            context.shadowBlur = 15;
+            context.fillText("DRESS AND MAGIC", 450, 90);
+            context.shadowBlur = 0;
+
+            context.fillStyle = "#ffe1ff";
+            context.font = "18px Arial";
+            context.fillText(
+                "¡Tu aventura mágica comienza aquí!", 450, 125
+            );
+
+            dibujarGema();
+
+            // Botones de la pantalla principal
+            dibujarBoton(350, 425, 200, 65, "PLAY");
+
+            dibujarBoton(785, 515, 75, 55, "♪");
+
+            context.fillStyle = "#ffffff";
+            context.font = "15px Arial";
+            context.fillText("VOLUMEN", 822, 500);
+
+            angulo += 0.015;
+
+            requestAnimationFrame(dibujar);
+        }
+
+        dibujar();
+    </script>
+
+</body>
+</html>

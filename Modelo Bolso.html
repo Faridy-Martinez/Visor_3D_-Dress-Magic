@@ -1,0 +1,617 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bolso de Vestir 3D</title>
+
+<style>
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+  text-align: center;
+  color: #614b69;
+  background: #fff0f7;
+}
+
+header {
+  padding: 22px 12px 10px;
+}
+
+h1 {
+  color: #d45e9c;
+  margin: 0 0 8px;
+  font-size: 29px;
+}
+
+p {
+  margin: 8px;
+}
+
+.contenedor {
+  width: min(950px, 94%);
+  margin: 15px auto 30px;
+  padding: 18px;
+  background: white;
+  border-radius: 24px;
+  box-shadow: 0 8px 25px #d9a9c755;
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: 440px;
+  border-radius: 18px;
+  background: linear-gradient(#fff8fd, #eee1ff);
+  touch-action: none;
+}
+
+.controles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 22px 8px 12px;
+}
+
+.control {
+  padding: 16px;
+  background: #fff0f8;
+  border-radius: 16px;
+  text-align: left;
+}
+
+.control label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-weight: bold;
+  margin-bottom: 12px;
+}
+
+input[type="range"] {
+  width: 100%;
+  accent-color: #dc71ae;
+  cursor: pointer;
+}
+
+button {
+  border: none;
+  border-radius: 14px;
+  padding: 12px 22px;
+  background: #dc71ae;
+  color: white;
+  font-size: 15px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #c65394;
+}
+
+.nota {
+  color: #8b7490;
+  font-size: 13px;
+  margin-top: 16px;
+}
+
+@media (max-width: 560px) {
+  .controles {
+    grid-template-columns: 1fr;
+  }
+
+  canvas {
+    height: 350px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>👜 Mi Bolso de Moda 🎀</h1>
+  <p>¡Diseña un bolso elegante y dale tu propio estilo!</p>
+</header>
+
+<main class="contenedor">
+
+  <canvas id="lienzo"></canvas>
+
+  <section class="controles">
+
+    <div class="control">
+      <label for="ancho">
+        <span>📏 Ancho del bolso</span>
+        <span id="valorAncho">2.0</span>
+      </label>
+
+      <input
+        id="ancho"
+        type="range"
+        min="1.5"
+        max="2.8"
+        step="0.1"
+        value="2.0">
+    </div>
+
+    <div class="control">
+      <label for="redondez">
+        <span>💗 Redondez de esquinas</span>
+        <span id="valorRedondez">0.25</span>
+      </label>
+
+      <input
+        id="redondez"
+        type="range"
+        min="0.05"
+        max="0.45"
+        step="0.05"
+        value="0.25">
+    </div>
+
+  </section>
+
+  <button id="reiniciar">✨ Reiniciar diseño</button>
+
+  <p class="nota">
+    Arrastra para girar el bolso y utiliza la rueda del ratón
+    para acercarte o alejarte.
+  </p>
+
+</main>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from "three";
+import { OrbitControls } from
+  "three/addons/controls/OrbitControls.js";
+
+// CONFIGURACIÓN DE LA ESCENA
+const canvas = document.getElementById("lienzo");
+
+const escena = new THREE.Scene();
+escena.background = new THREE.Color("#f4eaff");
+
+const camara = new THREE.PerspectiveCamera(
+  40, 1, 0.1, 100
+);
+
+camara.position.set(3.5, 2.8, 6);
+
+const renderizador = new THREE.WebGLRenderer({
+  canvas: canvas,
+  antialias: true
+});
+
+renderizador.setPixelRatio(
+  Math.min(window.devicePixelRatio, 2)
+);
+
+renderizador.shadowMap.enabled = true;
+renderizador.shadowMap.type = THREE.PCFSoftShadowMap;
+renderizador.outputColorSpace = THREE.SRGBColorSpace;
+renderizador.toneMapping = THREE.ACESFilmicToneMapping;
+renderizador.toneMappingExposure = 1.2;
+
+// CONTROLES DE CÁMARA
+const controles = new OrbitControls(camara, canvas);
+
+controles.enableDamping = true;
+controles.target.set(0, 1.25, 0);
+controles.minDistance = 3;
+controles.maxDistance = 9;
+controles.maxPolarAngle = Math.PI * 0.49;
+
+// ILUMINACIÓN
+escena.add(
+  new THREE.HemisphereLight(0xffffff, 0xd6b6dc, 2.2)
+);
+
+const luz = new THREE.DirectionalLight(0xffffff, 3);
+luz.position.set(3, 6, 5);
+luz.castShadow = true;
+escena.add(luz);
+
+const luzRelleno = new THREE.DirectionalLight(
+  0xffc9e8, 1.5
+);
+luzRelleno.position.set(-4, 3, -3);
+escena.add(luzRelleno);
+
+// MATERIALES
+const materialBolso = new THREE.MeshStandardMaterial({
+  color: "#ee91bd",
+  roughness: 0.38,
+  metalness: 0.02
+});
+
+const materialBorde = new THREE.MeshStandardMaterial({
+  color: "#d96fa6",
+  roughness: 0.48
+});
+
+const materialAsa = new THREE.MeshStandardMaterial({
+  color: "#f6b6d5",
+  roughness: 0.4
+});
+
+const materialDorado = new THREE.MeshStandardMaterial({
+  color: "#ffd66e",
+  metalness: 0.35,
+  roughness: 0.3
+});
+
+const materialInterior = new THREE.MeshStandardMaterial({
+  color: "#b995ed",
+  roughness: 0.6
+});
+
+const bolso = new THREE.Group();
+escena.add(bolso);
+
+// PARÁMETROS MODIFICABLES
+let ancho = 2.0;
+let redondez = 0.25;
+
+const alto = 1.65;
+const profundidad = 0.52;
+
+// CREA UNA FORMA RECTANGULAR CON ESQUINAS REDONDEADAS
+function crearFormaRedondeada(w, h, r) {
+  const forma = new THREE.Shape();
+
+  const x = -w / 2;
+  const y = 0;
+
+  r = Math.min(r, w / 2 - 0.001, h / 2 - 0.001);
+
+  forma.moveTo(x + r, y);
+  forma.lineTo(x + w - r, y);
+  forma.quadraticCurveTo(x + w, y, x + w, y + r);
+
+  forma.lineTo(x + w, y + h - r);
+  forma.quadraticCurveTo(
+    x + w, y + h, x + w - r, y + h
+  );
+
+  forma.lineTo(x + r, y + h);
+  forma.quadraticCurveTo(x, y + h, x, y + h - r);
+
+  forma.lineTo(x, y + r);
+  forma.quadraticCurveTo(x, y, x + r, y);
+
+  return forma;
+}
+
+// EXTRUYE UNA FORMA 2D PARA CREAR UN OBJETO 3D
+function crearPieza(w, h, r, d, material, y, z) {
+  const forma = crearFormaRedondeada(w, h, r);
+
+  const geometria = new THREE.ExtrudeGeometry(forma, {
+    depth: d,
+    bevelEnabled: true,
+    bevelSegments: 3,
+    steps: 1,
+    bevelSize: 0.035,
+    bevelThickness: 0.035,
+    curveSegments: 12
+  });
+
+  const malla = new THREE.Mesh(geometria, material);
+
+  malla.position.set(0, y, z);
+  malla.castShadow = true;
+  malla.receiveShadow = true;
+
+  bolso.add(malla);
+
+  return malla;
+}
+
+// CREA UN TUBO CURVO PARA EL ASA
+function crearAsa() {
+  const puntos = [];
+
+  const w = ancho * 0.36;
+  const baseY = alto + 0.02;
+  const alturaAsa = 0.88;
+
+  // Curva de Bézier cúbica
+  const curva = new THREE.CubicBezierCurve3(
+    new THREE.Vector3(-w, baseY, 0),
+    new THREE.Vector3(-w * 1.15, baseY + alturaAsa, 0),
+    new THREE.Vector3(w * 1.15, baseY + alturaAsa, 0),
+    new THREE.Vector3(w, baseY, 0)
+  );
+
+  puntos.push(...curva.getPoints(48));
+
+  const geometria = new THREE.TubeGeometry(
+    new THREE.CatmullRomCurve3(puntos),
+    64,
+    0.065,
+    12,
+    false
+  );
+
+  const asa = new THREE.Mesh(geometria, materialAsa);
+  asa.castShadow = true;
+
+  bolso.add(asa);
+
+  // Uniones doradas del asa
+  for (const lado of [-1, 1]) {
+    const union = new THREE.Mesh(
+      new THREE.SphereGeometry(0.095, 24, 20),
+      materialDorado
+    );
+
+    union.position.set(
+      lado * w, baseY, 0
+    );
+
+    union.castShadow = true;
+    bolso.add(union);
+  }
+}
+
+// CREA EL BROCHE DECORATIVO
+function crearBroche() {
+  const broche = new THREE.Mesh(
+    new THREE.SphereGeometry(0.12, 32, 24),
+    materialDorado
+  );
+
+  broche.position.set(0, alto * 0.55, profundidad + 0.075);
+  broche.scale.set(1, 1.1, 0.45);
+  broche.castShadow = true;
+
+  bolso.add(broche);
+
+  // Centro rosa del broche
+  const centro = new THREE.Mesh(
+    new THREE.SphereGeometry(0.055, 24, 20),
+    new THREE.MeshStandardMaterial({
+      color: "#fff0a5",
+      roughness: 0.35
+    })
+  );
+
+  centro.position.set(
+    0, alto * 0.55, profundidad + 0.125
+  );
+
+  centro.scale.set(1, 1, 0.5);
+  bolso.add(centro);
+}
+
+// CREA UNA FLOR DECORATIVA
+function crearFlor() {
+  const flor = new THREE.Group();
+
+  const materialPetalo = new THREE.MeshStandardMaterial({
+    color: "#fff0a8",
+    roughness: 0.45
+  });
+
+  for (let i = 0; i < 5; i++) {
+    const angulo = i * Math.PI * 2 / 5;
+
+    const petalo = new THREE.Mesh(
+      new THREE.SphereGeometry(0.075, 20, 16),
+      materialPetalo
+    );
+
+    petalo.position.set(
+      Math.cos(angulo) * 0.09,
+      Math.sin(angulo) * 0.09,
+      0
+    );
+
+    petalo.scale.set(1, 0.85, 0.45);
+    flor.add(petalo);
+  }
+
+  const centro = new THREE.Mesh(
+    new THREE.SphereGeometry(0.05, 20, 16),
+    materialDorado
+  );
+
+  centro.position.z = 0.025;
+  flor.add(centro);
+
+  flor.position.set(
+    -ancho * 0.27,
+    alto * 0.53,
+    profundidad + 0.07
+  );
+
+  bolso.add(flor);
+}
+
+// DETALLES FRONTALES
+function crearDetalles() {
+  // Borde decorativo en la parte superior
+  const borde = new THREE.Mesh(
+    new THREE.BoxGeometry(ancho * 0.88, 0.055, 0.055),
+    materialBorde
+  );
+
+  borde.position.set(
+    0, alto - 0.12, profundidad + 0.015
+  );
+
+  borde.castShadow = true;
+  bolso.add(borde);
+
+  // Costuras decorativas a los lados
+  for (const lado of [-1, 1]) {
+    for (let i = 0; i < 4; i++) {
+      const punto = new THREE.Mesh(
+        new THREE.SphereGeometry(0.025, 12, 12),
+        materialDorado
+      );
+
+      punto.position.set(
+        lado * ancho * 0.39,
+        0.3 + i * 0.22,
+        profundidad + 0.025
+      );
+
+      bolso.add(punto);
+    }
+  }
+}
+
+// CONSTRUCCIÓN DEL MODELO
+function construirBolso() {
+  // Elimina las geometrías anteriores
+  while (bolso.children.length > 0) {
+    const objeto = bolso.children[0];
+
+    bolso.remove(objeto);
+
+    objeto.traverse(hijo => {
+      if (hijo.geometry) {
+        hijo.geometry.dispose();
+      }
+    });
+  }
+
+  // Cuerpo principal: superficie extruida 3D
+  crearPieza(
+    ancho,
+    alto,
+    redondez,
+    profundidad,
+    materialBolso,
+    0.15,
+    -profundidad / 2
+  );
+
+  // Solapa frontal
+  crearPieza(
+    ancho * 0.78,
+    alto * 0.30,
+    Math.min(redondez, 0.18),
+    0.055,
+    materialInterior,
+    alto * 0.49,
+    profundidad / 2 - 0.01
+  );
+
+  // Reubica el broche sobre la solapa
+  crearBroche();
+
+  crearAsa();
+  crearDetalles();
+  crearFlor();
+}
+
+// SLIDERS
+const controlAncho = document.getElementById("ancho");
+const controlRedondez = document.getElementById("redondez");
+
+controlAncho.addEventListener("input", () => {
+  ancho = Number(controlAncho.value);
+
+  document.getElementById("valorAncho").textContent =
+    ancho.toFixed(1);
+
+  construirBolso();
+});
+
+controlRedondez.addEventListener("input", () => {
+  redondez = Number(controlRedondez.value);
+
+  document.getElementById("valorRedondez").textContent =
+    redondez.toFixed(2);
+
+  construirBolso();
+});
+
+// REINICIAR
+document.getElementById("reiniciar").addEventListener("click", () => {
+  ancho = 2.0;
+  redondez = 0.25;
+
+  controlAncho.value = ancho;
+  controlRedondez.value = redondez;
+
+  document.getElementById("valorAncho").textContent =
+    ancho.toFixed(1);
+
+  document.getElementById("valorRedondez").textContent =
+    redondez.toFixed(2);
+
+  construirBolso();
+
+  camara.position.set(3.5, 2.8, 6);
+  controles.target.set(0, 1.25, 0);
+  controles.update();
+});
+
+// SUELO
+const suelo = new THREE.Mesh(
+  new THREE.PlaneGeometry(200, 200),
+  new THREE.MeshStandardMaterial({
+    color: "#f4eaff",
+    roughness: 0.9
+  })
+);
+
+suelo.rotation.x = -Math.PI / 2;
+suelo.position.y = 0.10;
+suelo.receiveShadow = true;
+escena.add(suelo);
+
+// INICIAR MODELO
+construirBolso();
+
+// AJUSTAR PANTALLA
+function ajustarPantalla() {
+  const anchoCanvas = canvas.clientWidth;
+  const altoCanvas = canvas.clientHeight;
+
+  renderizador.setSize(
+    anchoCanvas,
+    altoCanvas,
+    false
+  );
+
+  camara.aspect = anchoCanvas / altoCanvas;
+  camara.updateProjectionMatrix();
+}
+
+const observador = new ResizeObserver(ajustarPantalla);
+observador.observe(canvas);
+ajustarPantalla();
+
+// ANIMACIÓN
+function animar() {
+  requestAnimationFrame(animar);
+
+  controles.update();
+
+  renderizador.render(escena, camara);
+}
+
+animar();
+</script>
+
+</body>
+</html>

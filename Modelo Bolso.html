@@ -180,16 +180,30 @@ import * as THREE from "three";
 import { OrbitControls } from
   "three/addons/controls/OrbitControls.js";
 
-// CONFIGURACIÓN DE LA ESCENA
-const canvas = document.getElementById("lienzo");
+// ==========================================
+// CONFIGURACIÓN DE LA ESCENA 3D
+// ==========================================
 
+const canvas = document.getElementById("lienzo");
 const escena = new THREE.Scene();
+
 escena.background = new THREE.Color("#f4eaff");
 
+// MATRICES DE TRANSFORMACIÓN:
+// La cámara tiene una posición y una orientación en el espacio 3D.
+// Three.js calcula automáticamente su matriz de vista,
+// que determina cómo se observa la escena.
+
+// PROYECCIÓN:
+// PerspectiveCamera define una proyección en perspectiva.
+// Parámetros: campo de visión, relación de aspecto inicial,
+// plano cercano y plano lejano.
 const camara = new THREE.PerspectiveCamera(
   40, 1, 0.1, 100
 );
 
+// MATRIZ DE TRANSFORMACIÓN:
+// position.set establece la posición de la cámara.
 camara.position.set(3.5, 2.8, 6);
 
 const renderizador = new THREE.WebGLRenderer({
@@ -207,7 +221,10 @@ renderizador.outputColorSpace = THREE.SRGBColorSpace;
 renderizador.toneMapping = THREE.ACESFilmicToneMapping;
 renderizador.toneMappingExposure = 1.2;
 
+// ==========================================
 // CONTROLES DE CÁMARA
+// ==========================================
+
 const controles = new OrbitControls(camara, canvas);
 
 controles.enableDamping = true;
@@ -216,7 +233,15 @@ controles.minDistance = 3;
 controles.maxDistance = 9;
 controles.maxPolarAngle = Math.PI * 0.49;
 
+// MATRICES DE TRANSFORMACIÓN:
+// OrbitControls permite cambiar la orientación de la cámara
+// al arrastrar el ratón. Three.js actualiza las matrices
+// necesarias para mostrar el bolso desde distintos ángulos.
+
+// ==========================================
 // ILUMINACIÓN
+// ==========================================
+
 escena.add(
   new THREE.HemisphereLight(0xffffff, 0xd6b6dc, 2.2)
 );
@@ -232,7 +257,10 @@ const luzRelleno = new THREE.DirectionalLight(
 luzRelleno.position.set(-4, 3, -3);
 escena.add(luzRelleno);
 
+// ==========================================
 // MATERIALES
+// ==========================================
+
 const materialBolso = new THREE.MeshStandardMaterial({
   color: "#ee91bd",
   roughness: 0.38,
@@ -260,24 +288,38 @@ const materialInterior = new THREE.MeshStandardMaterial({
   roughness: 0.6
 });
 
+// Grupo que contiene las piezas del bolso.
 const bolso = new THREE.Group();
 escena.add(bolso);
 
+// MATRICES DE TRANSFORMACIÓN:
+// Cada pieza añadida al grupo tiene sus propias transformaciones.
+// El grupo permite transformar conjuntamente todas sus piezas.
+
+// ==========================================
 // PARÁMETROS MODIFICABLES
+// ==========================================
+
 let ancho = 2.0;
 let redondez = 0.25;
 
 const alto = 1.65;
 const profundidad = 0.52;
 
-// CREA UNA FORMA RECTANGULAR CON ESQUINAS REDONDEADAS
+// ==========================================
+// FORMA CON ESQUINAS REDONDEADAS
+// ==========================================
+
 function crearFormaRedondeada(w, h, r) {
   const forma = new THREE.Shape();
 
   const x = -w / 2;
   const y = 0;
 
-  r = Math.min(r, w / 2 - 0.001, h / 2 - 0.001);
+  r = Math.max(
+    0.001,
+    Math.min(r, w / 2 - 0.001, h / 2 - 0.001)
+  );
 
   forma.moveTo(x + r, y);
   forma.lineTo(x + w - r, y);
@@ -297,10 +339,16 @@ function crearFormaRedondeada(w, h, r) {
   return forma;
 }
 
-// EXTRUYE UNA FORMA 2D PARA CREAR UN OBJETO 3D
+// ==========================================
+// GEOMETRÍA Y TRANSFORMACIONES
+// ==========================================
+
 function crearPieza(w, h, r, d, material, y, z) {
   const forma = crearFormaRedondeada(w, h, r);
 
+  // GEOMETRÍA 3D:
+  // ExtrudeGeometry convierte el contorno 2D en un sólido
+  // añadiéndole profundidad en el eje Z.
   const geometria = new THREE.ExtrudeGeometry(forma, {
     depth: d,
     bevelEnabled: true,
@@ -313,7 +361,12 @@ function crearPieza(w, h, r, d, material, y, z) {
 
   const malla = new THREE.Mesh(geometria, material);
 
+  // MATRIZ DE TRANSFORMACIÓN:
+  // position define la traslación de esta pieza en el espacio.
+  // Three.js combina la traslación con la rotación y la escala
+  // para calcular su matriz de transformación del modelo.
   malla.position.set(0, y, z);
+
   malla.castShadow = true;
   malla.receiveShadow = true;
 
@@ -322,7 +375,10 @@ function crearPieza(w, h, r, d, material, y, z) {
   return malla;
 }
 
-// CREA UN TUBO CURVO PARA EL ASA
+// ==========================================
+// ASA CURVA DEL BOLSO
+// ==========================================
+
 function crearAsa() {
   const puntos = [];
 
@@ -330,7 +386,8 @@ function crearAsa() {
   const baseY = alto + 0.02;
   const alturaAsa = 0.88;
 
-  // Curva de Bézier cúbica
+  // CURVA DE BÉZIER CÚBICA:
+  // Los puntos de control definen la forma del asa.
   const curva = new THREE.CubicBezierCurve3(
     new THREE.Vector3(-w, baseY, 0),
     new THREE.Vector3(-w * 1.15, baseY + alturaAsa, 0),
@@ -340,8 +397,10 @@ function crearAsa() {
 
   puntos.push(...curva.getPoints(48));
 
+  const trayectoria = new THREE.CatmullRomCurve3(puntos);
+
   const geometria = new THREE.TubeGeometry(
-    new THREE.CatmullRomCurve3(puntos),
+    trayectoria,
     64,
     0.065,
     12,
@@ -349,40 +408,51 @@ function crearAsa() {
   );
 
   const asa = new THREE.Mesh(geometria, materialAsa);
-  asa.castShadow = true;
 
+  // MATRIZ DE TRANSFORMACIÓN:
+  // El asa pertenece al grupo del bolso y puede heredar
+  // las transformaciones que se apliquen a dicho grupo.
+  asa.castShadow = true;
   bolso.add(asa);
 
-  // Uniones doradas del asa
+  // Uniones decorativas del asa.
   for (const lado of [-1, 1]) {
     const union = new THREE.Mesh(
       new THREE.SphereGeometry(0.095, 24, 20),
       materialDorado
     );
 
-    union.position.set(
-      lado * w, baseY, 0
-    );
+    // MATRIZ DE TRANSFORMACIÓN:
+    // Coloca cada unión en un extremo del asa.
+    union.position.set(lado * w, baseY, 0);
 
     union.castShadow = true;
     bolso.add(union);
   }
 }
 
-// CREA EL BROCHE DECORATIVO
+// ==========================================
+// BROCHE DECORATIVO
+// ==========================================
+
 function crearBroche() {
   const broche = new THREE.Mesh(
     new THREE.SphereGeometry(0.12, 32, 24),
     materialDorado
   );
 
-  broche.position.set(0, alto * 0.55, profundidad + 0.075);
+  // MATRICES DE TRANSFORMACIÓN:
+  // position traslada el broche y scale modifica su tamaño
+  // en cada eje para conseguir una forma ovalada.
+  broche.position.set(
+    0, alto * 0.55, profundidad + 0.075
+  );
+
   broche.scale.set(1, 1.1, 0.45);
   broche.castShadow = true;
 
   bolso.add(broche);
 
-  // Centro rosa del broche
   const centro = new THREE.Mesh(
     new THREE.SphereGeometry(0.055, 24, 20),
     new THREE.MeshStandardMaterial({
@@ -391,6 +461,9 @@ function crearBroche() {
     })
   );
 
+  // MATRIZ DE TRANSFORMACIÓN:
+  // El centro se traslada y se escala para encajar
+  // visualmente sobre el broche.
   centro.position.set(
     0, alto * 0.55, profundidad + 0.125
   );
@@ -399,7 +472,10 @@ function crearBroche() {
   bolso.add(centro);
 }
 
-// CREA UNA FLOR DECORATIVA
+// ==========================================
+// FLOR DECORATIVA
+// ==========================================
+
 function crearFlor() {
   const flor = new THREE.Group();
 
@@ -416,6 +492,8 @@ function crearFlor() {
       materialPetalo
     );
 
+    // MATRIZ DE TRANSFORMACIÓN:
+    // Cada pétalo se traslada y se escala para formar la flor.
     petalo.position.set(
       Math.cos(angulo) * 0.09,
       Math.sin(angulo) * 0.09,
@@ -434,6 +512,8 @@ function crearFlor() {
   centro.position.z = 0.025;
   flor.add(centro);
 
+  // MATRIZ DE TRANSFORMACIÓN:
+  // Sitúa la flor sobre la superficie frontal del bolso.
   flor.position.set(
     -ancho * 0.27,
     alto * 0.53,
@@ -443,14 +523,18 @@ function crearFlor() {
   bolso.add(flor);
 }
 
-// DETALLES FRONTALES
+// ==========================================
+// DETALLES DEL BOLSO
+// ==========================================
+
 function crearDetalles() {
-  // Borde decorativo en la parte superior
   const borde = new THREE.Mesh(
     new THREE.BoxGeometry(ancho * 0.88, 0.055, 0.055),
     materialBorde
   );
 
+  // MATRIZ DE TRANSFORMACIÓN:
+  // Traslada el borde a la parte superior del bolso.
   borde.position.set(
     0, alto - 0.12, profundidad + 0.015
   );
@@ -458,7 +542,7 @@ function crearDetalles() {
   borde.castShadow = true;
   bolso.add(borde);
 
-  // Costuras decorativas a los lados
+  // Puntos decorativos a ambos lados.
   for (const lado of [-1, 1]) {
     for (let i = 0; i < 4; i++) {
       const punto = new THREE.Mesh(
@@ -466,6 +550,8 @@ function crearDetalles() {
         materialDorado
       );
 
+      // MATRIZ DE TRANSFORMACIÓN:
+      // Cada punto se coloca en una coordenada específica.
       punto.position.set(
         lado * ancho * 0.39,
         0.3 + i * 0.22,
@@ -477,14 +563,18 @@ function crearDetalles() {
   }
 }
 
-// CONSTRUCCIÓN DEL MODELO
+// ==========================================
+// CONSTRUCCIÓN Y ACTUALIZACIÓN DEL MODELO
+// ==========================================
+
 function construirBolso() {
-  // Elimina las geometrías anteriores
+  // Elimina las piezas anteriores para reconstruir el modelo.
   while (bolso.children.length > 0) {
     const objeto = bolso.children[0];
 
     bolso.remove(objeto);
 
+    // Libera la geometría de cada objeto eliminado.
     objeto.traverse(hijo => {
       if (hijo.geometry) {
         hijo.geometry.dispose();
@@ -492,7 +582,7 @@ function construirBolso() {
     });
   }
 
-  // Cuerpo principal: superficie extruida 3D
+  // Cuerpo principal del bolso.
   crearPieza(
     ancho,
     alto,
@@ -503,7 +593,7 @@ function construirBolso() {
     -profundidad / 2
   );
 
-  // Solapa frontal
+  // Solapa frontal.
   crearPieza(
     ancho * 0.78,
     alto * 0.30,
@@ -514,15 +604,20 @@ function construirBolso() {
     profundidad / 2 - 0.01
   );
 
-  // Reubica el broche sobre la solapa
   crearBroche();
-
   crearAsa();
   crearDetalles();
   crearFlor();
+
+  // MATRICES DE TRANSFORMACIÓN:
+  // Al reconstruir las piezas con los nuevos parámetros,
+  // cambia la geometría y la ubicación relativa de los detalles.
 }
 
-// SLIDERS
+// ==========================================
+// SLIDERS: PARÁMETROS MODIFICABLES
+// ==========================================
+
 const controlAncho = document.getElementById("ancho");
 const controlRedondez = document.getElementById("redondez");
 
@@ -544,7 +639,10 @@ controlRedondez.addEventListener("input", () => {
   construirBolso();
 });
 
-// REINICIAR
+// ==========================================
+// REINICIAR DISEÑO
+// ==========================================
+
 document.getElementById("reiniciar").addEventListener("click", () => {
   ancho = 2.0;
   redondez = 0.25;
@@ -560,12 +658,18 @@ document.getElementById("reiniciar").addEventListener("click", () => {
 
   construirBolso();
 
+  // MATRICES DE TRANSFORMACIÓN:
+  // Restablece la posición de la cámara para volver
+  // a la vista inicial del modelo.
   camara.position.set(3.5, 2.8, 6);
   controles.target.set(0, 1.25, 0);
   controles.update();
 });
 
+// ==========================================
 // SUELO
+// ==========================================
+
 const suelo = new THREE.Mesh(
   new THREE.PlaneGeometry(200, 200),
   new THREE.MeshStandardMaterial({
@@ -574,15 +678,21 @@ const suelo = new THREE.Mesh(
   })
 );
 
+// MATRIZ DE TRANSFORMACIÓN:
+// La rotación inclina el plano 90 grados para colocarlo
+// horizontalmente debajo del bolso.
 suelo.rotation.x = -Math.PI / 2;
+
+// MATRIZ DE TRANSFORMACIÓN:
+// Traslada el suelo a la altura indicada.
 suelo.position.y = 0.10;
 suelo.receiveShadow = true;
 escena.add(suelo);
 
-// INICIAR MODELO
-construirBolso();
+// ==========================================
+// AJUSTE DEL CANVAS Y MATRIZ DE PROYECCIÓN
+// ==========================================
 
-// AJUSTAR PANTALLA
 function ajustarPantalla() {
   const anchoCanvas = canvas.clientWidth;
   const altoCanvas = canvas.clientHeight;
@@ -593,7 +703,16 @@ function ajustarPantalla() {
     false
   );
 
+  // MATRIZ DE PROYECCIÓN:
+  // La relación entre el ancho y el alto del canvas determina
+  // la proporción de la imagen proyectada.
   camara.aspect = anchoCanvas / altoCanvas;
+
+  // MATRIZ DE PROYECCIÓN:
+  // Actualiza la matriz de proyección de la cámara después
+  // de cambiar la relación de aspecto.
+  // Esta matriz convierte el espacio de la cámara en una
+  // proyección en perspectiva sobre la pantalla.
   camara.updateProjectionMatrix();
 }
 
@@ -601,16 +720,35 @@ const observador = new ResizeObserver(ajustarPantalla);
 observador.observe(canvas);
 ajustarPantalla();
 
-// ANIMACIÓN
+// ==========================================
+// RENDERIZADO Y PROYECCIÓN FINAL
+// ==========================================
+
+construirBolso();
+
 function animar() {
   requestAnimationFrame(animar);
 
   controles.update();
 
+  // MATRICES DE TRANSFORMACIÓN:
+  // Three.js actualiza las matrices de los objetos y la cámara
+  // para conocer su posición y orientación en la escena.
+
+  // MATRIZ DE VISTA:
+  // Determina cómo se observa la escena desde la cámara.
+
+  // MATRIZ DE PROYECCIÓN:
+  // Proyecta la escena 3D en el plano de imagen 2D.
+
+  // RENDERIZADO:
+  // Combina geometría, materiales, iluminación, transformaciones
+  // y proyección para dibujar el bolso en el canvas.
   renderizador.render(escena, camara);
 }
 
 animar();
+
 </script>
 
 </body>
